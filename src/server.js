@@ -33,7 +33,7 @@ const auth = new google.auth.OAuth2(
 );
 
 app.post('/schedule-event', async (req, res) => {
-    const { sumamry, startTime, endTime } = req.body;
+    const { summary, startTime, endTime } = req.body;
 
     try {
         const calendar = google.calendar({ version: 'v3', auth });
@@ -42,14 +42,26 @@ app.post('/schedule-event', async (req, res) => {
             calendarId: 'primary',
             resource: {
                 summary,
-                start: {dateTime, startTime, timeZone: 'America/Denver' },
-                end: {dateTime, endTime, timeZone: 'America/Denver' },
+                start: {dateTime: startTime, timeZone: 'America/Denver' },
+                end: {dateTime: endTime, timeZone: 'America/Denver' },
             }
         });
         res.json({ success: true, link: event.data.htmlLink });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
+});
+
+app.post("/events", (req, res) => {
+    const { lead_name, event_type, date_time, reminder_sent } = req.body;
+    // Validate input here (e.g., non-empty strings, valid date, etc.)
+    if (!lead_name || !event_type || !date_time) {
+        return res.status(400).json({ message: "Invalid input data." });
+    }
+    // Save to database
+    const newEvent = { lead_name, event_type, date_time, reminder_sent };
+    events.push(newEvent); // Assume `events` is an array acting as a mock database
+    res.status(201).json(newEvent);
 });
 
 const PORT = process.env.PORT || 5000;
