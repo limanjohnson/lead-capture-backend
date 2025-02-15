@@ -10,6 +10,8 @@ app.use(cors());
 
 const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
+let events = []
+
 // Twilio Setup
 app.post('/send-sms', async (req, res) => {
     const { to, message } = req.body;
@@ -53,15 +55,41 @@ app.post('/schedule-event', async (req, res) => {
 });
 
 app.post("/events", (req, res) => {
-    const { lead_name, event_type, date_time, reminder_sent } = req.body;
-    // Validate input here (e.g., non-empty strings, valid date, etc.)
-    if (!lead_name || !event_type || !date_time) {
-        return res.status(400).json({ message: "Invalid input data." });
+    try {
+        const { lead_name, event_type, date_time, reminder_sent } = req.body;
+
+        if (!lead_name || !event_type || !date_time) {
+            console.log("Invalid input received:", req.body);
+            return res.status(400).json({ message: "Invalid input data." });
+        }
+
+        const newEvent = { id: events.length + 1, lead_name, event_type, date_time, reminder_sent };
+        events.push(newEvent);
+
+        console.log("Event added:", newEvent);
+        res.status(201).json(newEvent);
+    } catch (error) {
+        console.error("Error adding event:", error);
+        res.status(500).json({ message: "Internal server error." });
     }
-    // Save to database
-    const newEvent = { lead_name, event_type, date_time, reminder_sent };
-    events.push(newEvent); // Assume `events` is an array acting as a mock database
-    res.status(201).json(newEvent);
+});
+
+// Get all events
+app.get("/events", (req, res) => {
+    res.json(events);
+});
+
+// Delete an event
+app.delete("/events/:id", (req, res) => {
+    const eventId = parseInt(req.params.id);
+    const eventIndex = events.findIndex(event => event.id === eventId);
+
+    if (eventIndex === -1) {
+        return res.status(404).json({ message: "Event not found." });
+    }
+
+    events.splice(eventIndex, 1);
+    res.json({ success: true, message: "Event deleted."})
 });
 
 const PORT = process.env.PORT || 5000;
